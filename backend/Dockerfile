@@ -8,8 +8,8 @@ WORKDIR /app
 # Copia o pom.xml primeiro para aproveitar o cache de dependências do Docker
 COPY pom.xml .
 
-# Baixa as dependências do projeto
-RUN mvn dependency:go-offline
+# Baixa as dependências e os plugins do projeto
+RUN mvn -B dependency:go-offline dependency:resolve-plugins
 
 # Copia o restante do código-fonte do projeto
 COPY src ./src

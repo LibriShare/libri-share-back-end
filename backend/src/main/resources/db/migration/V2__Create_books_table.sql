@@ -1,0 +1,29 @@
+CREATE SEQUENCE books_seq
+START 1
+INCREMENT 1;
+
+CREATE TABLE books (
+    id BIGINT PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    author VARCHAR(255) NOT NULL,
+    isbn VARCHAR(13),
+    genre VARCHAR(100),
+    total_pages INTEGER,
+    publication_year INTEGER,
+    publisher VARCHAR(100),
+    cover_url VARCHAR(2048),
+
+    status VARCHAR(50) NOT NULL,
+    pages_read INTEGER DEFAULT 0,
+    rating INTEGER DEFAULT 0,
+
+    user_id BIGINT NOT NULL,
+
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_user
+        FOREIGN KEY(user_id)
+        REFERENCES users(id)
+        ON DELETE CASCADE
+);
