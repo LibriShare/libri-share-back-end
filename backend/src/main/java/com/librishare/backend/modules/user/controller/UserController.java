@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/v1/users") // Define o caminho base para todos os endpoints deste controller
+@RequestMapping("/api/v1/users")
 public class UserController {
 
     @Autowired
