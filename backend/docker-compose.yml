@@ -29,8 +29,7 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/librishare
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: password
-      # Garante que o JPA crie o schema do banco na inicialização
-      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+
     networks:
       - librishare-network
 
