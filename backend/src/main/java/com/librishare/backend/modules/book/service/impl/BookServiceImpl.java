@@ -27,20 +27,15 @@ public class BookServiceImpl implements BookService {
 
     @Override
     public BookResponseDTO createBook(BookRequestDTO requestDTO) {
-        // 1. Verificar se o usuário existe
         User user = userRepository.findById(requestDTO.getUserId())
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado com ID: " + requestDTO.getUserId()));
 
-        // 2. Mapear o DTO para a Entidade Book
         Book book = modelMapper.map(requestDTO, Book.class);
 
-        // 3. Associar o usuário ao livro
         book.setUser(user);
-        
-        // 4. Salvar o livro no banco
+
         Book savedBook = bookRepository.save(book);
 
-        // 5. Mapear a entidade salva para o DTO de resposta
         return modelMapper.map(savedBook, BookResponseDTO.class);
     }
 }

@@ -56,9 +56,8 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void deleteUser(Long id) {
-        // Verifica se o usuário existe antes de tentar deletar
         if (!userRepository.existsById(id)) {
-            throw new RuntimeException("Usuário não encontrado com o ID: " + id); // Use uma exceção personalizada
+            throw new RuntimeException("Usuário não encontrado com o ID: " + id);
         }
         userRepository.deleteById(id);
     }

@@ -1,15 +1,14 @@
 package com.librishare.backend.modules.book.dto;
 
 import com.librishare.backend.modules.book.enums.BookStatus;
-import lombok.Data;
-
 import java.time.OffsetDateTime;
 import java.util.UUID;
+import lombok.Data;
 
 @Data
 public class BookResponseDTO {
     
-    private UUID id;
+    private Long id;
     private String title;
     private String author;
     private String isbn;
