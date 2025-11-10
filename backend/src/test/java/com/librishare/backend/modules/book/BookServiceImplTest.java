@@ -1,23 +1,13 @@
 package com.librishare.backend.modules.book;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.eq;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
+import com.librishare.backend.exception.DuplicateResourceException;
+import com.librishare.backend.exception.ResourceNotFoundException;
 import com.librishare.backend.modules.book.dto.BookRequestDTO;
 import com.librishare.backend.modules.book.dto.BookResponseDTO;
 import com.librishare.backend.modules.book.entity.Book;
 import com.librishare.backend.modules.book.repository.BookRepository;
 import com.librishare.backend.modules.book.service.impl.BookServiceImpl;
-import com.librishare.backend.modules.user.entity.User;
-import com.librishare.backend.modules.user.repository.UserRepository;
-import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -26,6 +16,13 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.*;
+
 @ExtendWith(MockitoExtension.class)
 class BookServiceImplTest {
 
@@ -33,73 +30,64 @@ class BookServiceImplTest {
     private BookRepository bookRepository;
 
     @Mock
-    private UserRepository userRepository;
-
-    @Mock
-    private ModelMapper modelMapper;
+    private ModelMapper mapper;
 
     @InjectMocks
-    private BookServiceImpl bookServiceImpl;
+    private BookServiceImpl bookService;
 
-    @Test
-    @DisplayName("Deve criar um livro com sucesso quando o usuário existe")
-    void createBook_Success() {
-        Long userId = 36L;
-        BookRequestDTO requestDTO = new BookRequestDTO();
-        requestDTO.setUserId(userId);
-        requestDTO.setTitle("O Senhor dos Anéis");
+    private Book book;
+    private BookRequestDTO bookRequestDTO;
+    private BookResponseDTO bookResponseDTO;
 
-        User mockUser = new User();
-        mockUser.setId(userId);
+    @BeforeEach
+    void setUp() {
+        bookRequestDTO = new BookRequestDTO();
+        bookRequestDTO.setTitle("Sapiens");
+        bookRequestDTO.setAuthor("Yuval Harari");
+        bookRequestDTO.setIsbn("1234567890123");
+        bookRequestDTO.setGoogleBooksId("googleId123");
 
-        Book mockBookToSave = new Book();
-        mockBookToSave.setTitle("O Senhor dos Anéis");
+        book = Book.builder()
+                .id(1L)
+                .title("Sapiens")
+                .author("Yuval Harari")
+                .isbn("1234567890123")
+                .googleBooksId("googleId123")
+                .build();
 
-        Book mockSavedBook = new Book();
-        mockSavedBook.setId(22L);
-        mockSavedBook.setTitle("O Senhor dos Anéis");
-        mockSavedBook.setUser(mockUser);
-
-        BookResponseDTO expectedResponse = new BookResponseDTO();
-        expectedResponse.setId(mockSavedBook.getId());
-        expectedResponse.setTitle(mockSavedBook.getTitle());
-
-        when(userRepository.findById(userId)).thenReturn(Optional.of(mockUser));
-        when(modelMapper.map(requestDTO, Book.class)).thenReturn(mockBookToSave);
-        when(bookRepository.save(any(Book.class))).thenReturn(mockSavedBook);
-        when(modelMapper.map(mockSavedBook, BookResponseDTO.class)).thenReturn(expectedResponse);
-
-        BookResponseDTO actualResponse = bookServiceImpl.createBook(requestDTO);
-
-        assertNotNull(actualResponse);
-        assertEquals(expectedResponse.getId(), actualResponse.getId());
-        assertEquals(expectedResponse.getTitle(), actualResponse.getTitle());
-
-        verify(userRepository, times(1)).findById(userId);
-        verify(modelMapper, times(1)).map(requestDTO, Book.class);
-        verify(bookRepository, times(1)).save(any(Book.class));
-        verify(modelMapper, times(1)).map(mockSavedBook, BookResponseDTO.class);
+        bookResponseDTO = new BookResponseDTO();
+        bookResponseDTO.setId(1L);
+        bookResponseDTO.setTitle("Sapiens");
+        bookResponseDTO.setAuthor("Yuval Harari");
     }
 
     @Test
-    @DisplayName("Deve lançar RuntimeException quando o usuário não for encontrado")
-    void createBook_UserNotFound() {
-        Long nonExistentUserId = 2L;
-        BookRequestDTO requestDTO = new BookRequestDTO();
-        requestDTO.setUserId(nonExistentUserId);
+    @DisplayName("Deve criar um livro no catálogo com sucesso")
+    void createBookInCatalog_Success() {
+        when(bookRepository.findByIsbn(anyString())).thenReturn(Optional.empty());
+        when(bookRepository.findByGoogleBooksId(anyString())).thenReturn(Optional.empty());
+        when(mapper.map(bookRequestDTO, Book.class)).thenReturn(book);
+        when(bookRepository.save(any(Book.class))).thenReturn(book);
+        when(mapper.map(book, BookResponseDTO.class)).thenReturn(bookResponseDTO);
 
-        String expectedErrorMessage = "Usuário não encontrado com ID: " + nonExistentUserId;
+        BookResponseDTO result = bookService.createBookInCatalog(bookRequestDTO);
 
-        when(userRepository.findById(nonExistentUserId)).thenReturn(Optional.empty());
+        assertNotNull(result);
+        assertEquals(bookResponseDTO.getTitle(), result.getTitle());
+        verify(bookRepository, times(1)).save(book);
+    }
+    
+    @Test
+    @DisplayName("Deve encontrar ou criar (criar novo)")
+    void findOrCreateBook_CreatesNew() {
+        when(bookRepository.findByGoogleBooksId(anyString())).thenReturn(Optional.empty());
+        when(bookRepository.findByIsbn(anyString())).thenReturn(Optional.empty());
+        when(mapper.map(bookRequestDTO, Book.class)).thenReturn(book);
+        when(bookRepository.save(book)).thenReturn(book);
 
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
-            bookServiceImpl.createBook(requestDTO);
-        });
+        Book result = bookService.findOrCreateBook(bookRequestDTO);
 
-        assertEquals(expectedErrorMessage, exception.getMessage());
-
-        verify(bookRepository, never()).save(any());
-        verify(modelMapper, never()).map(any(), eq(Book.class));
-        verify(modelMapper, never()).map(any(), eq(BookResponseDTO.class));
+        assertNotNull(result);
+        verify(bookRepository, times(1)).save(book);
     }
 }
