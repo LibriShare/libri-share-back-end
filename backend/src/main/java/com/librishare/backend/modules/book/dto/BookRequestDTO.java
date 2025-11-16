@@ -1,14 +1,8 @@
 package com.librishare.backend.modules.book.dto;
 
-import com.librishare.backend.modules.book.enums.BookStatus;
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
-import org.hibernate.validator.constraints.URL;
-
-import java.util.UUID;
 
 @Data
 public class BookRequestDTO {
@@ -19,28 +13,14 @@ public class BookRequestDTO {
     @NotBlank(message = "O autor é obrigatório")
     private String author;
 
-    private String isbn;
-    private String genre;
-
-    @Min(value = 1, message = "O número de páginas deve ser positivo")
-    private Integer totalPages;
-    
-    private Integer publicationYear;
     private String publisher;
+    private Integer publicationYear;
 
-    @URL(message = "A URL da capa deve ser válida")
-    private String coverUrl;
+    @Size(min = 10, max = 13, message = "ISBN deve ter entre 10 e 13 caracteres")
+    private String isbn;
 
-    @NotNull(message = "O status é obrigatório")
-    private BookStatus status;
+    private Integer pages;
+    private String coverImageUrl;
+    private String googleBooksId;
 
-    @Min(value = 0, message = "Páginas lidas não pode ser negativo")
-    private Integer pagesRead = 0;
-
-    @Min(value = 0, message = "A avaliação mínima é 0")
-    @Max(value = 5, message = "A avaliação máxima é 5")
-    private Integer rating = 0;
-
-    @NotNull(message = "O ID do usuário é obrigatório")
-    private Long userId;
 }
