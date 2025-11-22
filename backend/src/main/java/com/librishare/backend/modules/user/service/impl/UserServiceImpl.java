@@ -65,32 +65,32 @@ public class UserServiceImpl implements UserService {
         User userToUpdate = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado com o ID: " + id));
 
-        // Verifica email duplicado (em outro usuário)
+        // Validações de duplicidade (mantém código anterior...)
         userRepository.findByEmail(userRequestDTO.getEmail()).ifPresent(user -> {
-            if (!user.getId().equals(id)) {
-                throw new DuplicateResourceException("Erro: Email já cadastrado por outro usuário.");
-            }
+            if (!user.getId().equals(id)) throw new DuplicateResourceException("Erro: Email já cadastrado por outro usuário.");
+        });
+        userRepository.findByCpf(userRequestDTO.getCpf()).ifPresent(user -> {
+            if (!user.getId().equals(id)) throw new DuplicateResourceException("Erro: CPF já cadastrado por outro usuário.");
         });
 
-        // Verifica CPF duplicado (em outro usuário)
-        userRepository.findByCpf(userRequestDTO.getCpf()).ifPresent(user -> {
-            if (!user.getId().equals(id)) {
-                throw new DuplicateResourceException("Erro: CPF já cadastrado por outro usuário.");
-            }
-        });
+        // CORREÇÃO: Salvar senha antiga antes do mapeamento
+        String oldPassword = userToUpdate.getPassword();
 
         // Mapeia os campos do DTO para a entidade existente
         mapper.map(userRequestDTO, userToUpdate);
 
-        // Só atualiza a senha se uma nova senha for fornecida
+        // Lógica de Senha:
         if (userRequestDTO.getPassword() != null && !userRequestDTO.getPassword().isEmpty()) {
+            // Se enviou nova senha, criptografa
             userToUpdate.setPassword(passwordEncoder.encode(userRequestDTO.getPassword()));
+        } else {
+            // Se não enviou senha, mantém a antiga (evita que o mapper deixe null)
+            userToUpdate.setPassword(oldPassword);
         }
 
         User updatedUser = userRepository.save(userToUpdate);
         return mapper.map(updatedUser, UserResponseDTO.class);
     }
-
 
     @Override
     public void deleteUser(Long id) {

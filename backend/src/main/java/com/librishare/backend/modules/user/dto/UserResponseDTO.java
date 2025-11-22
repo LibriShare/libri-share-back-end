@@ -1,6 +1,8 @@
 package com.librishare.backend.modules.user.dto;
 
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -24,4 +26,5 @@ public class UserResponseDTO {
   private String addressState;
   private String addressZip;
   private Integer annualReadingGoal;
+  private OffsetDateTime createdAt;
 }

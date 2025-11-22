@@ -6,10 +6,12 @@ import com.librishare.backend.modules.book.entity.Book;
 import com.librishare.backend.modules.book.repository.BookRepository;
 import com.librishare.backend.modules.library.dto.AddBookRequest;
 import com.librishare.backend.modules.library.dto.UserBookResponse;
+import com.librishare.backend.modules.library.dto.UserLibraryStatsDTO;
 import com.librishare.backend.modules.library.entity.UserBook;
 import com.librishare.backend.modules.library.enums.ReadingStatus;
 import com.librishare.backend.modules.library.repository.UserBookRepository;
 import com.librishare.backend.modules.library.service.LibraryService;
+import com.librishare.backend.modules.loan.repository.LoanRepository;
 import com.librishare.backend.modules.user.entity.User;
 import com.librishare.backend.modules.user.repository.UserRepository;
 import org.modelmapper.ModelMapper;
@@ -31,6 +33,9 @@ public class LibraryServiceImpl implements LibraryService {
 
     @Autowired
     private BookRepository bookRepository;
+
+    @Autowired
+    private LoanRepository loanRepository;
 
     @Autowired
     private ModelMapper mapper;
@@ -96,17 +101,74 @@ public class LibraryServiceImpl implements LibraryService {
         return mapToResponse(updatedUserBook);
     }
 
-    // Helper para "achatar" a Entidade para o DTO
+    @Override
+    public UserBookResponse updateBookProgress(Long userId, Long userBookId, Integer currentPage) {
+        UserBook userBook = userBookRepository.findByIdAndUserId(userBookId, userId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Entrada da biblioteca não encontrada com ID: " + userBookId));
+
+        userBook.setCurrentPage(currentPage);
+
+        if (userBook.getBook().getPages() != null && currentPage >= userBook.getBook().getPages()) {
+            userBook.setStatus(ReadingStatus.READ);
+            userBook.setFinishedReadingAt(OffsetDateTime.now());
+        }
+
+        UserBook updated = userBookRepository.save(userBook);
+        return mapToResponse(updated);
+    }
+
+    @Override
+    public UserBookResponse updateBookRating(Long userId, Long userBookId, Integer rating) {
+        UserBook userBook = userBookRepository.findByIdAndUserId(userBookId, userId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Entrada da biblioteca não encontrada com ID: " + userBookId));
+
+        if (rating < 1 || rating > 5) {
+            throw new IllegalArgumentException("A nota deve ser entre 1 e 5.");
+        }
+
+        userBook.setRating(rating);
+        UserBook updated = userBookRepository.save(userBook);
+        return mapToResponse(updated);
+    }
+
+    @Override
+    public UserBookResponse updateBookReview(Long userId, Long userBookId, String review) {
+        UserBook userBook = userBookRepository.findByIdAndUserId(userBookId, userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Entrada não encontrada."));
+
+        userBook.setReview(review);
+        UserBook updated = userBookRepository.save(userBook);
+        return mapToResponse(updated);
+    }
+
+    @Override
+    public UserLibraryStatsDTO getUserLibraryStats(Long userId) {
+        long total = userBookRepository.countByUserId(userId);
+        long read = userBookRepository.countByUserIdAndStatus(userId, ReadingStatus.READ);
+        long reading = userBookRepository.countByUserIdAndStatus(userId, ReadingStatus.READING);
+        long toRead = userBookRepository.countByUserIdAndStatus(userId, ReadingStatus.WANT_TO_READ);
+
+        // Buscar empréstimos ativos
+        long activeLoans = loanRepository.countByUserBook_User_IdAndStatus(userId, "ACTIVE");
+
+        return new UserLibraryStatsDTO(total, read, reading, toRead, activeLoans);
+    }
+
     private UserBookResponse mapToResponse(UserBook userBook) {
         UserBookResponse response = mapper.map(userBook, UserBookResponse.class);
-        
+
+        response.setCurrentPage(userBook.getCurrentPage() != null ? userBook.getCurrentPage() : 0);
+
         if (userBook.getBook() != null) {
             response.setBookId(userBook.getBook().getId());
             response.setTitle(userBook.getBook().getTitle());
             response.setAuthor(userBook.getBook().getAuthor());
             response.setCoverImageUrl(userBook.getBook().getCoverImageUrl());
+            response.setTotalPages(userBook.getBook().getPages());
         }
-        
+
         return response;
     }
 }

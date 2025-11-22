@@ -11,5 +11,6 @@ CREATE TABLE users (
     address_city VARCHAR(255),
     address_state VARCHAR(255),
     address_zip VARCHAR(255),
-    annual_reading_goal INT
+    annual_reading_goal INT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );

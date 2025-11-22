@@ -49,4 +49,7 @@ public class UserBook {
 
     @Column(name = "finished_reading_at")
     private OffsetDateTime finishedReadingAt;
+
+    @Column(name = "current_page")
+    private Integer currentPage = 0;
 }

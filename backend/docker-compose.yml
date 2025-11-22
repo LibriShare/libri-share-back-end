@@ -1,7 +1,4 @@
-version: '3.8'
-
 services:
-  # Serviço do Banco de Dados PostgreSQL
   db:
     image: postgres:14-alpine
     container_name: librishare-db
@@ -16,7 +13,6 @@ services:
     networks:
       - librishare-network
 
-  # Serviço da sua Aplicação Java
   app:
     build: .
     container_name: librishare-app
@@ -25,19 +21,32 @@ services:
     ports:
       - "8080:8080"
     environment:
-      # Sobrescreve a URL do banco de dados para apontar para o container 'db'
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/librishare
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: password
-
     networks:
       - librishare-network
 
-# Define um volume nomeado para persistir os dados do banco
+  frontend:
+    container_name: librishare-frontend
+    build:
+      context: ../../libri-share-front-end/librishare
+      dockerfile: Dockerfile
+      # --- ADICIONE ESTA LINHA 'args' ---
+      args:
+        - NEXT_PUBLIC_API_URL=http://localhost:8080
+    ports:
+      - "3000:3000"
+    networks:
+      - librishare-network
+    depends_on:
+      - app
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8080
+
 volumes:
   postgres_data:
 
-# Define uma rede customizada para a comunicação entre os containers
 networks:
   librishare-network:
     driver: bridge

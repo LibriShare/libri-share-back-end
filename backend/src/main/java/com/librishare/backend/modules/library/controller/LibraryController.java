@@ -2,6 +2,7 @@ package com.librishare.backend.modules.library.controller;
 
 import com.librishare.backend.modules.library.dto.AddBookRequest;
 import com.librishare.backend.modules.library.dto.UserBookResponse;
+import com.librishare.backend.modules.library.dto.UserLibraryStatsDTO;
 import com.librishare.backend.modules.library.enums.ReadingStatus;
 import com.librishare.backend.modules.library.service.LibraryService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -88,7 +89,6 @@ public class LibraryController {
     @Operation(
             summary = "Atualiza o status de leitura de um livro",
             description = "Muda o status de um livro na estante do usuário (ex: de 'WANT_TO_READ' para 'READING').",
-            // Adiciona um exemplo de como o JSON de Request deve ser
             requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
                     description = "O novo status desejado para o livro.",
                     required = true,
@@ -115,7 +115,6 @@ public class LibraryController {
 
         ReadingStatus newStatus;
         try {
-            // Pega o valor "status" do JSON e converte para o Enum
             String status = statusUpdate.get("status");
             if (status == null) {
                 throw new IllegalArgumentException("O campo 'status' é obrigatório.");
@@ -127,5 +126,73 @@ public class LibraryController {
 
         UserBookResponse response = libraryService.updateBookStatus(userId, userBookId, newStatus);
         return ResponseEntity.ok(response);
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Progresso atualizado com sucesso",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = UserBookResponse.class))),
+            @ApiResponse(responseCode = "400", description = "Página atual inválida (nula ou negativa)",
+                    content = @Content),
+            @ApiResponse(responseCode = "404", description = "Entrada da biblioteca não encontrada",
+                    content = @Content)
+    })
+    @PatchMapping("/{userBookId}/progress")
+    public ResponseEntity<UserBookResponse> updateBookProgress(
+            @PathVariable Long userId,
+            @PathVariable Long userBookId,
+            @RequestBody Map<String, Integer> progressUpdate) {
+
+        Integer currentPage = progressUpdate.get("currentPage");
+        if (currentPage == null || currentPage < 0) {
+            throw new IllegalArgumentException("Página atual inválida.");
+        }
+
+        UserBookResponse response = libraryService.updateBookProgress(userId, userBookId, currentPage);
+        return ResponseEntity.ok(response);
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Progresso atualizado com sucesso",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = UserBookResponse.class))),
+            @ApiResponse(responseCode = "400", description = "Página atual inválida (nula ou negativa)",
+                    content = @Content),
+            @ApiResponse(responseCode = "404", description = "Entrada da biblioteca não encontrada",
+                    content = @Content)
+    })
+    @Operation(summary = "Avalia um livro (1-5 estrelas)")
+    @PatchMapping("/{userBookId}/rating")
+    public ResponseEntity<UserBookResponse> updateBookRating(
+            @PathVariable Long userId,
+            @PathVariable Long userBookId,
+            @RequestBody Map<String, Integer> ratingUpdate) {
+
+        Integer rating = ratingUpdate.get("rating");
+        if (rating == null) {
+            throw new IllegalArgumentException("O campo 'rating' é obrigatório.");
+        }
+
+        UserBookResponse response = libraryService.updateBookRating(userId, userBookId, rating);
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "Adiciona ou atualiza a resenha de um livro")
+    @PatchMapping("/{userBookId}/review")
+    public ResponseEntity<UserBookResponse> updateBookReview(
+            @PathVariable Long userId,
+            @PathVariable Long userBookId,
+            @RequestBody Map<String, String> reviewUpdate) {
+
+        String review = reviewUpdate.get("review");
+        if (review == null) {
+            throw new IllegalArgumentException("O campo 'review' é obrigatório.");
+        }
+
+        UserBookResponse response = libraryService.updateBookReview(userId, userBookId, review);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/stats")
+    public ResponseEntity<UserLibraryStatsDTO> getLibraryStats(@PathVariable Long userId) {
+        return ResponseEntity.ok(libraryService.getUserLibraryStats(userId));
     }
 }

@@ -7,16 +7,19 @@ import java.time.OffsetDateTime;
 
 @Data
 public class UserBookResponse {
-    
-    private Long id; // ID da entrada na biblioteca (UserBook ID)
+
+    private Long id;
     private ReadingStatus status;
     private Integer rating;
     private String review;
     private OffsetDateTime addedAt;
-    
-    // Dados do Livro (achatado)
+
+    private Integer currentPage;
+
+    // Dados do Livro
     private Long bookId;
     private String title;
     private String author;
     private String coverImageUrl;
+    private Integer totalPages;
 }
