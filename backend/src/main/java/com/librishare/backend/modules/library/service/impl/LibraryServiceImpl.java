@@ -4,6 +4,7 @@ import com.librishare.backend.exception.DuplicateResourceException;
 import com.librishare.backend.exception.ResourceNotFoundException;
 import com.librishare.backend.modules.book.entity.Book;
 import com.librishare.backend.modules.book.repository.BookRepository;
+import com.librishare.backend.modules.history.service.HistoryService;
 import com.librishare.backend.modules.library.dto.AddBookRequest;
 import com.librishare.backend.modules.library.dto.UserBookResponse;
 import com.librishare.backend.modules.library.dto.UserLibraryStatsDTO;
@@ -40,6 +41,9 @@ public class LibraryServiceImpl implements LibraryService {
     @Autowired
     private ModelMapper mapper;
 
+    @Autowired
+    private HistoryService historyService;
+
     @Override
     public UserBookResponse addBookToLibrary(Long userId, AddBookRequest request) {
         User user = userRepository.findById(userId)
@@ -60,6 +64,21 @@ public class LibraryServiceImpl implements LibraryService {
                 .build();
 
         UserBook savedUserBook = userBookRepository.save(newUserBook);
+
+        // --- LOG DE HISTÓRICO INTELIGENTE ---
+        String actionType = "BIBLIOTECA";
+        String description = "Adicionou '" + book.getTitle() + "' à estante.";
+
+        if (request.getStatus() == ReadingStatus.WANT_TO_READ) {
+            actionType = "LISTA DE DESEJOS";
+            description = "Adicionou '" + book.getTitle() + "' à lista de desejos.";
+        } else if (request.getStatus() == ReadingStatus.READING) {
+            actionType = "LEITURA";
+            description = "Começou a ler '" + book.getTitle() + "'.";
+        }
+
+        historyService.logAction(user, actionType, description);
+
         return mapToResponse(savedUserBook);
     }
 
@@ -145,15 +164,16 @@ public class LibraryServiceImpl implements LibraryService {
 
     @Override
     public UserLibraryStatsDTO getUserLibraryStats(Long userId) {
-        long total = userBookRepository.countByUserId(userId);
         long read = userBookRepository.countByUserIdAndStatus(userId, ReadingStatus.READ);
         long reading = userBookRepository.countByUserIdAndStatus(userId, ReadingStatus.READING);
-        long toRead = userBookRepository.countByUserIdAndStatus(userId, ReadingStatus.WANT_TO_READ);
+        long tbr = userBookRepository.countByUserIdAndStatus(userId, ReadingStatus.TO_READ); // <--- CONTA TBR
+        long wishlist = userBookRepository.countByUserIdAndStatus(userId, ReadingStatus.WANT_TO_READ);
 
-        // Buscar empréstimos ativos
+        // Total da Biblioteca = Lidos + Lendo + Para Ler
+        long totalOwned = read + reading + tbr;
         long activeLoans = loanRepository.countByUserBook_User_IdAndStatus(userId, "ACTIVE");
 
-        return new UserLibraryStatsDTO(total, read, reading, toRead, activeLoans);
+        return new UserLibraryStatsDTO(totalOwned, read, reading, wishlist, activeLoans);
     }
 
     private UserBookResponse mapToResponse(UserBook userBook) {

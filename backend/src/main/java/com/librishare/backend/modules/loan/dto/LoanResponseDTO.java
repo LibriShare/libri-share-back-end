@@ -13,6 +13,7 @@ public class LoanResponseDTO {
     private Long id;
     private Long bookId;
     private String bookTitle;
+    private String bookAuthor;
     private String bookCoverUrl;
     private String borrowerName;
     private String borrowerEmail;

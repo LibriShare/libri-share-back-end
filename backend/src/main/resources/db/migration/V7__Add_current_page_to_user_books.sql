@@ -1,1 +1,0 @@
-ALTER TABLE user_books ADD COLUMN current_page INT DEFAULT 0;

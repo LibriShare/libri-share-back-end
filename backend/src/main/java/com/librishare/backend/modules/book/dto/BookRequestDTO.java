@@ -4,6 +4,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
+import java.math.BigDecimal;
+
 @Data
 public class BookRequestDTO {
 
@@ -20,7 +22,15 @@ public class BookRequestDTO {
     private String isbn;
 
     private Integer pages;
+
     private String coverImageUrl;
+
     private String googleBooksId;
+
+    private String synopsis;
+
+    private BigDecimal price;
+
+    private String purchaseUrl;
 
 }

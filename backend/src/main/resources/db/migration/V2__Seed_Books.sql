@@ -1,0 +1,9 @@
+INSERT INTO books (title, author, publisher, publication_year, isbn, pages, cover_image_url, synopsis, price) VALUES
+('O Alquimista', 'Paulo Coelho', 'Editora Rocco', 1988, '9788532511589', 208, '/o-alquimista-book-cover.jpg', 'Santiago é um jovem pastor andaluz que viaja de sua terra natal na Espanha para o mercado egípcio em busca de um tesouro.', 39.90),
+('1984', 'George Orwell', 'Companhia das Letras', 1949, '9788535914849', 416, '/1984-book-cover-dystopian.jpg', 'Winston Smith vive em uma sociedade totalitária governada pelo Partido e seu líder, o Grande Irmão.', 45.50),
+('Dom Casmurro', 'Machado de Assis', 'Principis', 1899, '9786555520672', 256, '/dom-casmurro-classic-book.jpg', 'Bentinho conta a história de sua vida e sua obsessão por Capitu.', 19.90),
+('O Pequeno Príncipe', 'Antoine de Saint-Exupéry', 'HarperCollins', 1943, '9788595081512', 96, '/o-pequeno-principe-book.jpg', 'Um piloto cai no deserto e encontra um menino de outro planeta.', 25.00),
+('Sapiens', 'Yuval Noah Harari', 'L&PM', 2011, '9788525434616', 592, '/sapiens-book-cover-history.jpg', 'Uma breve história da humanidade.', 69.90),
+('O Poder do Hábito', 'Charles Duhigg', 'Objetiva', 2012, '9788539004119', 408, '/o-poder-do-habito-book-cover.jpg', 'Como criamos e mudamos hábitos.', 59.90),
+('Mindset', 'Carol S. Dweck', 'Objetiva', 2017, '9788539008247', 312, '/mindset-book-cover-psychology.jpg', 'A nova psicologia do sucesso.', 49.90),
+('A Sutil Arte de Ligar o F*da-se', 'Mark Manson', 'Intrínseca', 2017, '9788551002490', 224, '/a-sutil-arte-de-ligar-o-foda-se-book-cover.jpg', 'Uma estratégia inusitada para uma vida melhor.', 39.90);

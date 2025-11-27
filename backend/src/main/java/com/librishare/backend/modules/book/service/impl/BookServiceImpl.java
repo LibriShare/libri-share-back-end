@@ -7,6 +7,7 @@ import com.librishare.backend.modules.book.dto.BookResponseDTO;
 import com.librishare.backend.modules.book.entity.Book;
 import com.librishare.backend.modules.book.repository.BookRepository;
 import com.librishare.backend.modules.book.service.BookService;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.TypeToken;
@@ -73,6 +74,39 @@ public class BookServiceImpl implements BookService {
         // 3. Se não encontrou, cria um novo livro no catálogo
         Book newBook = modelMapper.map(requestDTO, Book.class);
         return bookRepository.save(newBook);
+    }
+
+    @Override
+    @Transactional
+    public BookResponseDTO updateBook(Long id, BookRequestDTO requestDTO) {
+        Book book = bookRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Livro não encontrado com ID: " + id));
+
+        if (requestDTO.getSynopsis() != null) {
+            book.setSynopsis(requestDTO.getSynopsis());
+        }
+
+        if (requestDTO.getCoverImageUrl() != null && !requestDTO.getCoverImageUrl().isEmpty()) {
+            book.setCoverImageUrl(requestDTO.getCoverImageUrl());
+        }
+
+        if (requestDTO.getTitle() != null && !requestDTO.getTitle().isEmpty()) {
+            book.setTitle(requestDTO.getTitle());
+        }
+        if (requestDTO.getAuthor() != null && !requestDTO.getAuthor().isEmpty()) {
+            book.setAuthor(requestDTO.getAuthor());
+        }
+
+        if (requestDTO.getPrice() != null) {
+            book.setPrice(requestDTO.getPrice());
+        }
+        if (requestDTO.getPurchaseUrl() != null) {
+            book.setPurchaseUrl(requestDTO.getPurchaseUrl());
+        }
+
+        Book updatedBook = bookRepository.save(book);
+        return modelMapper.map(updatedBook, BookResponseDTO.class);
+
     }
 
     private void validateBookUniqueness(String isbn, String googleBooksId) {

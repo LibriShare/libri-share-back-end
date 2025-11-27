@@ -92,4 +92,10 @@ public class BookController {
                         "Livro não encontrado com Google ID: " + googleId));
         return ResponseEntity.ok(book);
     }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<BookResponseDTO> updateBook(@PathVariable Long id, @RequestBody BookRequestDTO requestDTO) {
+        BookResponseDTO updatedBook = bookService.updateBook(id, requestDTO);
+        return ResponseEntity.ok(updatedBook);
+    }
 }

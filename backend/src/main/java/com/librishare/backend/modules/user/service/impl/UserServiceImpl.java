@@ -32,9 +32,6 @@ public class UserServiceImpl implements UserService {
         if (userRepository.findByEmail(userRequestDTO.getEmail()).isPresent()) {
             throw new DuplicateResourceException("Erro: Email já cadastrado.");
         }
-        if (userRepository.findByCpf(userRequestDTO.getCpf()).isPresent()) {
-            throw new DuplicateResourceException("Erro: CPF já cadastrado.");
-        }
 
         User newUser = mapper.map(userRequestDTO, User.class);
 
@@ -69,14 +66,9 @@ public class UserServiceImpl implements UserService {
         userRepository.findByEmail(userRequestDTO.getEmail()).ifPresent(user -> {
             if (!user.getId().equals(id)) throw new DuplicateResourceException("Erro: Email já cadastrado por outro usuário.");
         });
-        userRepository.findByCpf(userRequestDTO.getCpf()).ifPresent(user -> {
-            if (!user.getId().equals(id)) throw new DuplicateResourceException("Erro: CPF já cadastrado por outro usuário.");
-        });
 
-        // CORREÇÃO: Salvar senha antiga antes do mapeamento
         String oldPassword = userToUpdate.getPassword();
 
-        // Mapeia os campos do DTO para a entidade existente
         mapper.map(userRequestDTO, userToUpdate);
 
         // Lógica de Senha:

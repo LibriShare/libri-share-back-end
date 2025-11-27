@@ -38,20 +38,19 @@ class UserIntegrationTest {
         userRepository.deleteAll();
     }
 
-    private UserRequestDTO createValidUserDTO(String cpf) {
+    private UserRequestDTO createValidUserDTO() {
         UserRequestDTO dto = new UserRequestDTO();
         dto.setFirstName("Integration");
         dto.setLastName("Test");
         dto.setEmail("integration.test@example.com");
         dto.setPassword("ValidPassword123");
-        dto.setCpf(cpf);
         return dto;
     }
 
     @Test
     @DisplayName("Deve criar um usuário com sucesso via API")
     void createUser_Success() throws Exception {
-        UserRequestDTO userRequestDTO = createValidUserDTO("12345678901"); // CPF Simples
+        UserRequestDTO userRequestDTO = createValidUserDTO();
 
         mockMvc.perform(post("/api/v1/users")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -65,7 +64,7 @@ class UserIntegrationTest {
     @Test
     @DisplayName("Deve falhar ao criar usuário com email inválido (Validação)")
     void createUser_InvalidEmail_Fails() throws Exception {
-        UserRequestDTO userRequestDTO = createValidUserDTO("12345678901");
+        UserRequestDTO userRequestDTO = createValidUserDTO();
         userRequestDTO.setEmail("invalid-email"); // Email inválido
 
         mockMvc.perform(post("/api/v1/users")
@@ -81,10 +80,10 @@ class UserIntegrationTest {
         // 1. Cria o primeiro usuário
         mockMvc.perform(post("/api/v1/users")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(createValidUserDTO("12345678901"))));
+                .content(objectMapper.writeValueAsString(createValidUserDTO())));
 
         // 2. Tenta criar o segundo usuário com o mesmo email
-        UserRequestDTO duplicateUserDTO = createValidUserDTO("98765432109"); // CPF diferente
+        UserRequestDTO duplicateUserDTO = createValidUserDTO();
 
         mockMvc.perform(post("/api/v1/users")
                 .contentType(MediaType.APPLICATION_JSON)

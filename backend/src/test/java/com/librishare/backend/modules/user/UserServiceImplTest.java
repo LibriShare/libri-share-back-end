@@ -52,7 +52,6 @@ class UserServiceImplTest {
         userRequestDTO.setFirstName("John");
         userRequestDTO.setLastName("Doe");
         userRequestDTO.setEmail("john.doe@example.com");
-        userRequestDTO.setCpf("12345678900");
         userRequestDTO.setPassword("password123");
 
         user = new User();
@@ -60,7 +59,6 @@ class UserServiceImplTest {
         user.setFirstName("John");
         user.setLastName("Doe");
         user.setEmail("john.doe@example.com");
-        user.setCpf("12345678900");
         user.setPassword("hashed_password");
 
         userResponseDTO = new UserResponseDTO();
@@ -68,14 +66,12 @@ class UserServiceImplTest {
         userResponseDTO.setFirstName("John");
         userResponseDTO.setLastName("Doe");
         userResponseDTO.setEmail("john.doe@example.com");
-        userResponseDTO.setCpf("12345678900");
     }
 
     @Test
     @DisplayName("Deve criar um usuário com sucesso")
     void createUser_Success() {
         when(userRepository.findByEmail(anyString())).thenReturn(Optional.empty());
-        when(userRepository.findByCpf(anyString())).thenReturn(Optional.empty());
         when(userRepository.save(any(User.class))).thenReturn(user);
         when(mapper.map(userRequestDTO, User.class)).thenReturn(user);
         when(mapper.map(user, UserResponseDTO.class)).thenReturn(userResponseDTO);

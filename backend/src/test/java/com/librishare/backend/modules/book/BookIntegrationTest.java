@@ -4,9 +4,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.librishare.backend.modules.book.dto.BookRequestDTO;
 import com.librishare.backend.modules.book.entity.Book;
 import com.librishare.backend.modules.book.repository.BookRepository;
+import com.librishare.backend.modules.history.service.HistoryService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -34,6 +36,9 @@ class BookIntegrationTest {
 
     @Autowired
     private BookRepository bookRepository;
+
+    @Mock
+    private HistoryService historyService;
 
     @BeforeEach
     void setUp() {

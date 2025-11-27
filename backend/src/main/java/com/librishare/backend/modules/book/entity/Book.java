@@ -3,6 +3,8 @@ package com.librishare.backend.modules.book.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.math.BigDecimal;
+
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
@@ -39,4 +41,13 @@ public class Book {
 
     @Column(name = "google_books_id", unique = true)
     private String googleBooksId;
+
+    @Column(name = "synopsis", columnDefinition = "TEXT")
+    private String synopsis;
+
+    @Column(name = "price")
+    private BigDecimal price;
+
+    @Column(name = "purchase_url")
+    private String purchaseUrl;
 }

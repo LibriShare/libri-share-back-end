@@ -4,6 +4,7 @@ import com.librishare.backend.exception.DuplicateResourceException;
 import com.librishare.backend.exception.ResourceNotFoundException;
 import com.librishare.backend.modules.book.entity.Book;
 import com.librishare.backend.modules.book.repository.BookRepository;
+import com.librishare.backend.modules.history.service.HistoryService;
 import com.librishare.backend.modules.library.dto.AddBookRequest;
 import com.librishare.backend.modules.library.dto.UserBookResponse;
 import com.librishare.backend.modules.library.entity.UserBook;
@@ -20,6 +21,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.time.OffsetDateTime;
 import java.util.Optional;
@@ -42,6 +44,9 @@ class LibraryServiceImplTest {
 
     @InjectMocks
     private LibraryServiceImpl libraryService;
+
+    @Mock
+    private HistoryService historyService;
 
     private User user;
     private Book book;

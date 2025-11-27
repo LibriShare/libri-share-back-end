@@ -18,4 +18,6 @@ public interface BookService {
     Book findOrCreateBook(BookRequestDTO requestDTO);
 
     Optional<BookResponseDTO> findByGoogleBooksId(String googleBooksId);
+
+    BookResponseDTO updateBook(Long id, BookRequestDTO requestDTO);
 }

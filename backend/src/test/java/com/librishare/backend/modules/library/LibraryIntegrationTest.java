@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.librishare.backend.modules.book.entity.Book;
 import com.librishare.backend.modules.book.repository.BookRepository;
+import com.librishare.backend.modules.history.service.HistoryService;
 import com.librishare.backend.modules.library.dto.AddBookRequest;
 import com.librishare.backend.modules.library.entity.UserBook;
 import com.librishare.backend.modules.library.enums.ReadingStatus;
@@ -55,6 +56,9 @@ class LibraryIntegrationTest {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private HistoryService historyService;
+
     private User testUser;
     private Book testBook;
 
@@ -66,7 +70,6 @@ class LibraryIntegrationTest {
 
         testUser = User.builder()
                 .email("library.user@test.com")
-                .cpf("11122233344")
                 .firstName("Library")
                 .lastName("User")
                 .password(passwordEncoder.encode("password123"))
@@ -111,7 +114,6 @@ class LibraryIntegrationTest {
         // Cria um segundo usuário (completo)
         User otherUser = userRepository.save(User.builder()
                 .email("other@test.com")
-                .cpf("55544433322")
                 .password(passwordEncoder.encode("p"))
                 .firstName("Other") // Campo obrigatório
                 .lastName("User") // Campo obrigatório

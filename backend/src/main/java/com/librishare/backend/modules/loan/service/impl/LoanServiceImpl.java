@@ -1,6 +1,7 @@
 package com.librishare.backend.modules.loan.service.impl;
 
 import com.librishare.backend.exception.ResourceNotFoundException;
+import com.librishare.backend.modules.history.service.HistoryService;
 import com.librishare.backend.modules.library.entity.UserBook;
 import com.librishare.backend.modules.library.repository.UserBookRepository;
 import com.librishare.backend.modules.loan.dto.LoanRequestDTO;
@@ -23,6 +24,7 @@ public class LoanServiceImpl implements LoanService {
     private final LoanRepository loanRepository;
     private final UserBookRepository userBookRepository;
     private final ModelMapper mapper;
+    private final HistoryService historyService;
 
     @Override
     public LoanResponseDTO createLoan(Long userId, LoanRequestDTO dto) {
@@ -40,6 +42,14 @@ public class LoanServiceImpl implements LoanService {
                 .build();
 
         Loan savedLoan = loanRepository.save(loan);
+
+        // --- LOG DE EMPRÉSTIMO ---
+        historyService.logAction(
+                userBook.getUser(),
+                "EMPRÉSTIMO",
+                "Emprestou '" + userBook.getBook().getTitle() + "' para " + dto.getBorrowerName()
+        );
+
         return mapToDTO(savedLoan);
     }
 
@@ -62,13 +72,26 @@ public class LoanServiceImpl implements LoanService {
     }
 
     private LoanResponseDTO mapToDTO(Loan loan) {
-        LoanResponseDTO dto = mapper.map(loan, LoanResponseDTO.class);
-        // Mapeamento manual de campos aninhados para facilitar pro front
+        LoanResponseDTO dto = new LoanResponseDTO();
+
+        // Mapeamento direto da entidade Loan
+        dto.setId(loan.getId());
+        dto.setBorrowerName(loan.getBorrowerName());
+        dto.setBorrowerEmail(loan.getBorrowerEmail());
+        dto.setLoanDate(loan.getLoanDate());
+        dto.setDueDate(loan.getDueDate());
+        dto.setReturnDate(loan.getReturnDate());
+        dto.setStatus(loan.getStatus());
+        dto.setNotes(loan.getNotes());
+
+        // Mapeamento dos dados do Livro (UserBook -> Book)
         if (loan.getUserBook() != null && loan.getUserBook().getBook() != null) {
             dto.setBookId(loan.getUserBook().getBook().getId());
             dto.setBookTitle(loan.getUserBook().getBook().getTitle());
+            dto.setBookAuthor(loan.getUserBook().getBook().getAuthor()); // Preenche o Autor
             dto.setBookCoverUrl(loan.getUserBook().getBook().getCoverImageUrl());
         }
+
         return dto;
     }
 }

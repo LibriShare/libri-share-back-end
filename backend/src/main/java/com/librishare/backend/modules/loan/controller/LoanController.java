@@ -10,12 +10,17 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/users/{userId}/loans")
@@ -31,7 +36,8 @@ public class LoanController {
     )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Empréstimo criado com sucesso",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = LoanResponseDTO.class))),
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = LoanResponseDTO.class))),
             @ApiResponse(responseCode = "404", description = "Livro não encontrado na biblioteca do usuário",
                     content = @Content)
     })
@@ -49,7 +55,8 @@ public class LoanController {
     )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Lista de empréstimos retornada com sucesso",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = LoanResponseDTO.class)))
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = LoanResponseDTO.class)))
     })
     @GetMapping
     public ResponseEntity<List<LoanResponseDTO>> getUserLoans(@PathVariable Long userId) {
@@ -63,7 +70,8 @@ public class LoanController {
     )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Empréstimo atualizado com sucesso",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = LoanResponseDTO.class))),
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = LoanResponseDTO.class))),
             @ApiResponse(responseCode = "404", description = "Empréstimo não encontrado",
                     content = @Content)
     })
