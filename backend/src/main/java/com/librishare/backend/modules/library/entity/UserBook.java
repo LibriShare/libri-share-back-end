@@ -35,7 +35,7 @@ public class UserBook {
     private ReadingStatus status;
 
     @Column(name = "rating")
-    private Integer rating; // 1-5
+    private Integer rating;
 
     @Column(name = "review", columnDefinition = "TEXT")
     private String review;

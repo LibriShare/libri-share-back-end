@@ -10,6 +10,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
 import java.util.Arrays;
 
 @Configuration
@@ -26,10 +27,7 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        .anyRequest().permitAll() // Por enquanto tudo liberado para facilitar dev
-                )
-                .oauth2Login(oauth2 -> oauth2
-                        .defaultSuccessUrl("http://localhost:3000/dashboard", true) // Redireciona pro Front após login
+                        .anyRequest().permitAll()
                 );
 
         return http.build();

@@ -16,7 +16,6 @@ public class UserBookResponse {
 
     private Integer currentPage;
 
-    // Dados do Livro
     private Long bookId;
     private String title;
     private String author;

@@ -1,8 +1,10 @@
 package com.librishare.backend.modules.loan.service.impl;
 
+import com.librishare.backend.exception.DuplicateResourceException; // Importe para erro de conflito
 import com.librishare.backend.exception.ResourceNotFoundException;
 import com.librishare.backend.modules.history.service.HistoryService;
 import com.librishare.backend.modules.library.entity.UserBook;
+import com.librishare.backend.modules.library.enums.ReadingStatus; // Importe o Enum
 import com.librishare.backend.modules.library.repository.UserBookRepository;
 import com.librishare.backend.modules.loan.dto.LoanRequestDTO;
 import com.librishare.backend.modules.loan.dto.LoanResponseDTO;
@@ -31,6 +33,15 @@ public class LoanServiceImpl implements LoanService {
         UserBook userBook = userBookRepository.findByUserIdAndBookId(userId, dto.getBookId())
                 .orElseThrow(() -> new ResourceNotFoundException("Livro não encontrado na biblioteca do usuário."));
 
+        if (userBook.getStatus() != ReadingStatus.READ && userBook.getStatus() != ReadingStatus.TO_READ) {
+            throw new IllegalArgumentException("Você só pode emprestar livros que já leu ou que estão na estante 'Para Ler'.");
+        }
+
+        boolean isAlreadyLent = loanRepository.existsByUserBookIdAndStatus(userBook.getId(), "ACTIVE");
+        if (isAlreadyLent) {
+            throw new DuplicateResourceException("Este livro já está emprestado e não foi devolvido.");
+        }
+
         Loan loan = Loan.builder()
                 .userBook(userBook)
                 .borrowerName(dto.getBorrowerName())
@@ -43,7 +54,6 @@ public class LoanServiceImpl implements LoanService {
 
         Loan savedLoan = loanRepository.save(loan);
 
-        // --- LOG DE EMPRÉSTIMO ---
         historyService.logAction(
                 userBook.getUser(),
                 "EMPRÉSTIMO",
@@ -74,7 +84,6 @@ public class LoanServiceImpl implements LoanService {
     private LoanResponseDTO mapToDTO(Loan loan) {
         LoanResponseDTO dto = new LoanResponseDTO();
 
-        // Mapeamento direto da entidade Loan
         dto.setId(loan.getId());
         dto.setBorrowerName(loan.getBorrowerName());
         dto.setBorrowerEmail(loan.getBorrowerEmail());
@@ -84,11 +93,10 @@ public class LoanServiceImpl implements LoanService {
         dto.setStatus(loan.getStatus());
         dto.setNotes(loan.getNotes());
 
-        // Mapeamento dos dados do Livro (UserBook -> Book)
         if (loan.getUserBook() != null && loan.getUserBook().getBook() != null) {
             dto.setBookId(loan.getUserBook().getBook().getId());
             dto.setBookTitle(loan.getUserBook().getBook().getTitle());
-            dto.setBookAuthor(loan.getUserBook().getBook().getAuthor()); // Preenche o Autor
+            dto.setBookAuthor(loan.getUserBook().getBook().getAuthor());
             dto.setBookCoverUrl(loan.getUserBook().getBook().getCoverImageUrl());
         }
 

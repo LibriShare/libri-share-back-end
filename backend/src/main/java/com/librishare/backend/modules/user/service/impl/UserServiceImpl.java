@@ -2,6 +2,7 @@ package com.librishare.backend.modules.user.service.impl;
 
 import com.librishare.backend.exception.DuplicateResourceException;
 import com.librishare.backend.exception.ResourceNotFoundException;
+import com.librishare.backend.modules.user.dto.LoginRequestDTO;
 import com.librishare.backend.modules.user.dto.UserRequestDTO;
 import com.librishare.backend.modules.user.dto.UserResponseDTO;
 import com.librishare.backend.modules.user.entity.User;
@@ -12,6 +13,7 @@ import java.util.List;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.TypeToken;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -62,7 +64,6 @@ public class UserServiceImpl implements UserService {
         User userToUpdate = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado com o ID: " + id));
 
-        // Validações de duplicidade (mantém código anterior...)
         userRepository.findByEmail(userRequestDTO.getEmail()).ifPresent(user -> {
             if (!user.getId().equals(id)) throw new DuplicateResourceException("Erro: Email já cadastrado por outro usuário.");
         });
@@ -71,12 +72,9 @@ public class UserServiceImpl implements UserService {
 
         mapper.map(userRequestDTO, userToUpdate);
 
-        // Lógica de Senha:
         if (userRequestDTO.getPassword() != null && !userRequestDTO.getPassword().isEmpty()) {
-            // Se enviou nova senha, criptografa
             userToUpdate.setPassword(passwordEncoder.encode(userRequestDTO.getPassword()));
         } else {
-            // Se não enviou senha, mantém a antiga (evita que o mapper deixe null)
             userToUpdate.setPassword(oldPassword);
         }
 
@@ -90,5 +88,25 @@ public class UserServiceImpl implements UserService {
             throw new ResourceNotFoundException("Usuário não encontrado com o ID: " + id);
         }
         userRepository.deleteById(id);
+    }
+
+    @Override
+    public UserResponseDTO findUserByEmail(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado com o email: " + email));
+
+        return mapper.map(user, UserResponseDTO.class);
+    }
+
+    @Override
+    public UserResponseDTO login(LoginRequestDTO loginRequestDTO) {
+        User user = userRepository.findByEmail(loginRequestDTO.getEmail())
+                .orElseThrow(() -> new BadCredentialsException("Email ou senha inválidos."));
+
+        if (!passwordEncoder.matches(loginRequestDTO.getPassword(), user.getPassword())) {
+            throw new BadCredentialsException("Email ou senha inválidos.");
+        }
+
+        return mapper.map(user, UserResponseDTO.class);
     }
 }

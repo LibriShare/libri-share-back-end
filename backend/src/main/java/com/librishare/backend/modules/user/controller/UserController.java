@@ -1,5 +1,6 @@
 package com.librishare.backend.modules.user.controller;
 
+import com.librishare.backend.modules.user.dto.LoginRequestDTO;
 import com.librishare.backend.modules.user.dto.UserRequestDTO;
 import com.librishare.backend.modules.user.dto.UserResponseDTO;
 import com.librishare.backend.modules.user.service.UserService;
@@ -108,5 +109,23 @@ public class UserController {
     public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
         userService.deleteUser(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @Operation(summary = "Busca usuário por Email", description = "Retorna os dados do usuário através do email cadastrado.")
+    @GetMapping("/search")
+    public ResponseEntity<UserResponseDTO> getUserByEmail(@RequestParam String email) {
+        UserResponseDTO user = userService.findUserByEmail(email);
+        return ResponseEntity.ok(user);
+    }
+
+    @Operation(summary = "Realiza o login do usuário", description = "Verifica email e senha e retorna os dados do usuário se corretos.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Login realizado com sucesso"),
+            @ApiResponse(responseCode = "401", description = "Email ou senha inválidos", content = @Content)
+    })
+    @PostMapping("/login")
+    public ResponseEntity<UserResponseDTO> login(@Valid @RequestBody LoginRequestDTO loginRequestDTO) {
+        UserResponseDTO user = userService.login(loginRequestDTO);
+        return ResponseEntity.ok(user);
     }
 }

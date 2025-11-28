@@ -22,6 +22,7 @@ public class UserHistory {
     private User user;
 
     private String actionType;
+
     private String description;
 
     @CreationTimestamp

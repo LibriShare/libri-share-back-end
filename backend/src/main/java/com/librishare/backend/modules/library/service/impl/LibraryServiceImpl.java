@@ -65,7 +65,6 @@ public class LibraryServiceImpl implements LibraryService {
 
         UserBook savedUserBook = userBookRepository.save(newUserBook);
 
-        // --- LOG DE HISTÓRICO INTELIGENTE ---
         String actionType = "BIBLIOTECA";
         String description = "Adicionou '" + book.getTitle() + "' à estante.";
 
@@ -166,10 +165,9 @@ public class LibraryServiceImpl implements LibraryService {
     public UserLibraryStatsDTO getUserLibraryStats(Long userId) {
         long read = userBookRepository.countByUserIdAndStatus(userId, ReadingStatus.READ);
         long reading = userBookRepository.countByUserIdAndStatus(userId, ReadingStatus.READING);
-        long tbr = userBookRepository.countByUserIdAndStatus(userId, ReadingStatus.TO_READ); // <--- CONTA TBR
+        long tbr = userBookRepository.countByUserIdAndStatus(userId, ReadingStatus.TO_READ);
         long wishlist = userBookRepository.countByUserIdAndStatus(userId, ReadingStatus.WANT_TO_READ);
 
-        // Total da Biblioteca = Lidos + Lendo + Para Ler
         long totalOwned = read + reading + tbr;
         long activeLoans = loanRepository.countByUserBook_User_IdAndStatus(userId, "ACTIVE");
 

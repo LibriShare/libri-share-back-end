@@ -55,7 +55,6 @@ public class BookServiceImpl implements BookService {
 
     @Override
     public Book findOrCreateBook(BookRequestDTO requestDTO) {
-        // 1. Tenta encontrar pelo Google Books ID
         if (requestDTO.getGoogleBooksId() != null && !requestDTO.getGoogleBooksId().isEmpty()) {
             Optional<Book> existingBook = bookRepository.findByGoogleBooksId(requestDTO.getGoogleBooksId());
             if (existingBook.isPresent()) {
@@ -63,7 +62,6 @@ public class BookServiceImpl implements BookService {
             }
         }
 
-        // 2. Tenta encontrar pelo ISBN
         if (requestDTO.getIsbn() != null && !requestDTO.getIsbn().isEmpty()) {
             Optional<Book> existingBook = bookRepository.findByIsbn(requestDTO.getIsbn());
             if (existingBook.isPresent()) {
@@ -71,7 +69,6 @@ public class BookServiceImpl implements BookService {
             }
         }
 
-        // 3. Se não encontrou, cria um novo livro no catálogo
         Book newBook = modelMapper.map(requestDTO, Book.class);
         return bookRepository.save(newBook);
     }

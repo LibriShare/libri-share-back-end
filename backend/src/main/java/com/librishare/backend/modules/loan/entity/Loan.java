@@ -37,7 +37,7 @@ public class Loan {
     private LocalDate returnDate;
 
     @Column(name = "status", nullable = false)
-    private String status; // ACTIVE, RETURNED, OVERDUE
+    private String status;
 
     @Column(name = "notes")
     private String notes;

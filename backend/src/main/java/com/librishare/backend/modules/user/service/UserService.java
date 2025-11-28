@@ -1,5 +1,6 @@
 package com.librishare.backend.modules.user.service;
 
+import com.librishare.backend.modules.user.dto.LoginRequestDTO;
 import com.librishare.backend.modules.user.dto.UserRequestDTO;
 import com.librishare.backend.modules.user.dto.UserResponseDTO;
 
@@ -16,4 +17,8 @@ public interface UserService {
     UserResponseDTO updateUser(Long id, UserRequestDTO userRequestDTO);
 
     void deleteUser(Long id);
+
+    UserResponseDTO findUserByEmail(String email);
+
+    UserResponseDTO login(LoginRequestDTO loginRequestDTO);
 }
