@@ -12,6 +12,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -26,7 +29,9 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -51,6 +56,7 @@ class UserServiceImplTest {
 
     @BeforeEach
     void setUp() {
+        // Dados padrão para testes não parametrizados
         userRequestDTO = new UserRequestDTO();
         userRequestDTO.setFirstName("John");
         userRequestDTO.setLastName("Doe");
@@ -77,21 +83,46 @@ class UserServiceImplTest {
 
     // --- Create Tests ---
 
-    @Test
-    @DisplayName("Deve criar um usuário com sucesso")
-    void createUser_Success() {
-        when(userRepository.findByEmail(anyString())).thenReturn(Optional.empty());
-        when(mapper.map(userRequestDTO, User.class)).thenReturn(user);
-        when(passwordEncoder.encode(anyString())).thenReturn("encoded_password_123");
-        when(userRepository.save(any(User.class))).thenReturn(user);
-        when(mapper.map(user, UserResponseDTO.class)).thenReturn(userResponseDTO);
+    @ParameterizedTest
+    @CsvSource({
+            "John, Doe, john.doe@example.com, password123",
+            "Maria, Silva, maria.silva@test.com, 123456",
+            "Admin, User, admin@system.org, strongPass!"
+    })
+    @DisplayName("Deve criar utilizadores com diferentes dados com sucesso")
+    void createUser_Parameterized(String firstName, String lastName, String email, String password) {
+        // Arrange
+        UserRequestDTO req = new UserRequestDTO();
+        req.setFirstName(firstName);
+        req.setLastName(lastName);
+        req.setEmail(email);
+        req.setPassword(password);
 
-        UserResponseDTO result = userService.createUser(userRequestDTO);
+        User mappedUser = new User();
+        mappedUser.setFirstName(firstName);
+        mappedUser.setEmail(email);
+        mappedUser.setPassword("encoded_" + password);
 
+        UserResponseDTO expectedResponse = new UserResponseDTO();
+        expectedResponse.setId(1L);
+        expectedResponse.setFirstName(firstName);
+        expectedResponse.setEmail(email);
+
+        when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+        when(mapper.map(req, User.class)).thenReturn(mappedUser);
+        when(passwordEncoder.encode(password)).thenReturn("encoded_" + password);
+        when(userRepository.save(any(User.class))).thenReturn(mappedUser);
+        when(mapper.map(mappedUser, UserResponseDTO.class)).thenReturn(expectedResponse);
+
+        // Act
+        UserResponseDTO result = userService.createUser(req);
+
+        // Assert
         assertNotNull(result);
-        assertEquals(userResponseDTO.getId(), result.getId());
-        verify(passwordEncoder).encode("password123");
-        verify(userRepository).save(user);
+        assertEquals(email, result.getEmail());
+        assertEquals(firstName, result.getFirstName());
+        verify(passwordEncoder).encode(password);
+        verify(userRepository).save(any(User.class));
     }
 
     @Test
@@ -105,16 +136,27 @@ class UserServiceImplTest {
 
     // --- Find By ID Tests ---
 
-    @Test
-    @DisplayName("Deve buscar usuário por ID com sucesso")
-    void findUserById_Success() {
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(mapper.map(user, UserResponseDTO.class)).thenReturn(userResponseDTO);
+    @ParameterizedTest
+    @ValueSource(longs = { 1L, 100L, 5000L })
+    @DisplayName("Deve buscar utilizador por vários IDs válidos com sucesso")
+    void findUserById_Parameterized(Long id) {
+        // Arrange
+        User mockUser = new User();
+        mockUser.setId(id);
 
-        UserResponseDTO result = userService.findUserById(1L);
+        UserResponseDTO mockResponse = new UserResponseDTO();
+        mockResponse.setId(id);
 
+        when(userRepository.findById(id)).thenReturn(Optional.of(mockUser));
+        when(mapper.map(mockUser, UserResponseDTO.class)).thenReturn(mockResponse);
+
+        // Act
+        UserResponseDTO result = userService.findUserById(id);
+
+        // Assert
         assertNotNull(result);
-        assertEquals(1L, result.getId());
+        assertEquals(id, result.getId());
+        verify(userRepository).findById(id);
     }
 
     @Test
@@ -192,14 +234,18 @@ class UserServiceImplTest {
 
     // --- Delete Tests ---
 
-    @Test
-    @DisplayName("Deve deletar usuário com sucesso")
-    void deleteUser_Success() {
-        when(userRepository.existsById(1L)).thenReturn(true);
+    @ParameterizedTest
+    @ValueSource(longs = { 1L, 2L, 99L })
+    @DisplayName("Deve deletar utilizador com sucesso para diferentes IDs")
+    void deleteUser_Parameterized(Long id) {
+        // Arrange
+        when(userRepository.existsById(id)).thenReturn(true);
 
-        userService.deleteUser(1L);
+        // Act
+        userService.deleteUser(id);
 
-        verify(userRepository).deleteById(1L);
+        // Assert
+        verify(userRepository).deleteById(id);
     }
 
     @Test
@@ -213,16 +259,27 @@ class UserServiceImplTest {
 
     // --- Find By Email Tests ---
 
-    @Test
-    @DisplayName("Deve buscar usuário por email com sucesso")
-    void findUserByEmail_Success() {
-        when(userRepository.findByEmail("john.doe@example.com")).thenReturn(Optional.of(user));
-        when(mapper.map(user, UserResponseDTO.class)).thenReturn(userResponseDTO);
+    @ParameterizedTest
+    @ValueSource(strings = { "john.doe@example.com", "jane@test.co.uk", "admin-user@domain.org" })
+    @DisplayName("Deve buscar utilizador por diferentes emails válidos")
+    void findUserByEmail_Parameterized(String email) {
+        // Arrange
+        User mockUser = new User();
+        mockUser.setEmail(email);
 
-        UserResponseDTO result = userService.findUserByEmail("john.doe@example.com");
+        UserResponseDTO mockResponse = new UserResponseDTO();
+        mockResponse.setEmail(email);
 
+        when(userRepository.findByEmail(email)).thenReturn(Optional.of(mockUser));
+        when(mapper.map(mockUser, UserResponseDTO.class)).thenReturn(mockResponse);
+
+        // Act
+        UserResponseDTO result = userService.findUserByEmail(email);
+
+        // Assert
         assertNotNull(result);
-        assertEquals("john.doe@example.com", result.getEmail());
+        assertEquals(email, result.getEmail());
+        verify(userRepository).findByEmail(email);
     }
 
     @Test
@@ -234,18 +291,35 @@ class UserServiceImplTest {
 
     // --- Login Tests ---
 
-    @Test
-    @DisplayName("Deve realizar login com sucesso")
-    void login_Success() {
-        when(userRepository.findByEmail(loginRequestDTO.getEmail())).thenReturn(Optional.of(user));
-        // matches(rawPassword, encodedPassword)
-        when(passwordEncoder.matches(loginRequestDTO.getPassword(), user.getPassword())).thenReturn(true);
-        when(mapper.map(user, UserResponseDTO.class)).thenReturn(userResponseDTO);
+    @ParameterizedTest
+    @CsvSource({
+            "john.doe@example.com, password123",
+            "user2@test.com, mySecretPass"
+    })
+    @DisplayName("Deve realizar login com sucesso para diferentes credenciais")
+    void login_Parameterized(String email, String password) {
+        LoginRequestDTO loginReq = new LoginRequestDTO();
+        loginReq.setEmail(email);
+        loginReq.setPassword(password);
 
-        UserResponseDTO result = userService.login(loginRequestDTO);
+        User mockUser = new User();
+        mockUser.setEmail(email);
+        mockUser.setPassword("encoded_pass");
 
+        UserResponseDTO mockResponse = new UserResponseDTO();
+        mockResponse.setEmail(email);
+
+        when(userRepository.findByEmail(email)).thenReturn(Optional.of(mockUser));
+        when(passwordEncoder.matches(password, mockUser.getPassword())).thenReturn(true);
+        when(mapper.map(mockUser, UserResponseDTO.class)).thenReturn(mockResponse);
+
+        // Act
+        UserResponseDTO result = userService.login(loginReq);
+
+        // Assert
         assertNotNull(result);
-        assertEquals(user.getEmail(), result.getEmail());
+        assertEquals(email, result.getEmail());
+        verify(passwordEncoder).matches(password, mockUser.getPassword());
     }
 
     @Test

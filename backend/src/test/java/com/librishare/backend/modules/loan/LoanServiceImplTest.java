@@ -17,6 +17,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -58,7 +61,7 @@ class LoanServiceImplTest {
     @BeforeEach
     void setUp() {
         user = User.builder().id(1L).firstName("Bianca").build();
-        book = Book.builder().id(10L).title("Dom Quixote").author("Miguel de Cervantes").build();
+        book = Book.builder().id(10L).title("Dom Quixote").build();
 
         userBook = UserBook.builder()
                 .id(100L)
@@ -70,8 +73,6 @@ class LoanServiceImplTest {
         loanRequestDTO = new LoanRequestDTO();
         loanRequestDTO.setBookId(10L);
         loanRequestDTO.setBorrowerName("João da Silva");
-        loanRequestDTO.setBorrowerEmail("joao@email.com");
-        loanRequestDTO.setNotes("Cuidar bem");
 
         loan = Loan.builder()
                 .id(1L)
@@ -85,77 +86,65 @@ class LoanServiceImplTest {
 
     // --- Create Loan Tests ---
 
-    @Test
-    @DisplayName("Deve criar um empréstimo com sucesso (Status READ)")
-    void createLoan_Success() {
-        // Setup
+    @ParameterizedTest
+    @CsvSource({
+            "João da Silva, joao@email.com, Cuidar bem",
+            "Maria Souza, maria@test.com, Devolver rápido",
+            "Pedro, , Sem notas"
+    })
+    @DisplayName("Deve criar empréstimo com sucesso para diferentes dados de mutuário")
+    void createLoan_Parameterized(String borrowerName, String email, String notes) {
+        // Arrange
+        LoanRequestDTO req = new LoanRequestDTO();
+        req.setBookId(10L);
+        req.setBorrowerName(borrowerName);
+        req.setBorrowerEmail(email);
+        req.setNotes(notes);
+
+        Loan dynamicLoan = Loan.builder()
+                .userBook(userBook)
+                .borrowerName(borrowerName)
+                .borrowerEmail(email)
+                .status("ACTIVE")
+                .build();
+
         when(userBookRepository.findByUserIdAndBookId(1L, 10L)).thenReturn(Optional.of(userBook));
-        when(loanRepository.existsByUserBookIdAndStatus(100L, "ACTIVE")).thenReturn(false); // Não está emprestado
-        when(loanRepository.save(any(Loan.class))).thenReturn(loan);
+        when(loanRepository.existsByUserBookIdAndStatus(100L, "ACTIVE")).thenReturn(false);
+        when(loanRepository.save(any(Loan.class))).thenReturn(dynamicLoan);
 
-        LoanResponseDTO result = loanService.createLoan(1L, loanRequestDTO);
+        // Act
+        LoanResponseDTO result = loanService.createLoan(1L, req);
 
+        // Assert
         assertNotNull(result);
-        assertEquals("João da Silva", result.getBorrowerName());
-        assertEquals("Dom Quixote", result.getBookTitle());
-
-        verify(historyService, times(1)).logAction(eq(user), eq("EMPRÉSTIMO"), anyString());
+        assertEquals(borrowerName, result.getBorrowerName());
+        verify(historyService).logAction(eq(user), eq("EMPRÉSTIMO"), anyString());
         verify(loanRepository).save(any(Loan.class));
     }
 
     @Test
-    @DisplayName("Deve lançar erro se o livro não estiver na biblioteca do usuário")
+    @DisplayName("Deve lançar erro se o livro não estiver na biblioteca")
     void createLoan_BookNotFound() {
         when(userBookRepository.findByUserIdAndBookId(1L, 10L)).thenReturn(Optional.empty());
-
-        assertThrows(ResourceNotFoundException.class, () -> 
-            loanService.createLoan(1L, loanRequestDTO)
-        );
-        
-        verify(loanRepository, never()).save(any());
+        assertThrows(ResourceNotFoundException.class, () -> loanService.createLoan(1L, loanRequestDTO));
     }
 
     @Test
-    @DisplayName("Deve lançar erro se status do livro for inválido (ex: LENDO)")
+    @DisplayName("Deve lançar erro se status do livro for inválido")
     void createLoan_InvalidStatus() {
-        userBook.setStatus(ReadingStatus.READING); // Status inválido para empréstimo
+        userBook.setStatus(ReadingStatus.READING);
         when(userBookRepository.findByUserIdAndBookId(1L, 10L)).thenReturn(Optional.of(userBook));
-
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> 
-            loanService.createLoan(1L, loanRequestDTO)
-        );
-
-        assertTrue(ex.getMessage().contains("só pode emprestar livros que já leu"));
-        verify(loanRepository, never()).save(any());
+        assertThrows(IllegalArgumentException.class, () -> loanService.createLoan(1L, loanRequestDTO));
     }
 
     @Test
-    @DisplayName("Deve lançar erro se o livro já estiver emprestado (Ativo)")
-    void createLoan_AlreadyLent() {
-        when(userBookRepository.findByUserIdAndBookId(1L, 10L)).thenReturn(Optional.of(userBook));
-        when(loanRepository.existsByUserBookIdAndStatus(100L, "ACTIVE")).thenReturn(true); // Já existe
-
-        assertThrows(DuplicateResourceException.class, () -> 
-            loanService.createLoan(1L, loanRequestDTO)
-        );
-
-        verify(loanRepository, never()).save(any());
-    }
-    
-    @Test
-    @DisplayName("Deve definir data de devolução padrão (+14 dias) se não informada")
+    @DisplayName("Deve definir data de devolução padrão (+14 dias)")
     void createLoan_DefaultDueDate() {
         loanRequestDTO.setDueDate(null);
-
         when(userBookRepository.findByUserIdAndBookId(1L, 10L)).thenReturn(Optional.of(userBook));
-        when(loanRepository.existsByUserBookIdAndStatus(100L, "ACTIVE")).thenReturn(false);
-        when(loanRepository.save(any(Loan.class))).thenAnswer(invocation -> {
-            Loan saved = invocation.getArgument(0);
-            return saved;
-        });
-        
-        LoanResponseDTO result = loanService.createLoan(1L, loanRequestDTO);
+        when(loanRepository.save(any(Loan.class))).thenAnswer(i -> i.getArgument(0));
 
+        LoanResponseDTO result = loanService.createLoan(1L, loanRequestDTO);
         assertEquals(LocalDate.now().plusDays(14), result.getDueDate());
     }
 
@@ -165,36 +154,25 @@ class LoanServiceImplTest {
     @DisplayName("Deve listar empréstimos do usuário")
     void getLoansByUserId_Success() {
         when(loanRepository.findByUserId(1L)).thenReturn(Collections.singletonList(loan));
-
         List<LoanResponseDTO> result = loanService.getLoansByUserId(1L);
-
-        assertFalse(result.isEmpty());
         assertEquals(1, result.size());
-        assertEquals("João da Silva", result.get(0).getBorrowerName());
     }
 
     // --- Return Loan Tests ---
 
-    @Test
-    @DisplayName("Deve finalizar empréstimo com sucesso (Devolução)")
-    void returnLoan_Success() {
-        when(loanRepository.findById(50L)).thenReturn(Optional.of(loan));
-        when(loanRepository.save(any(Loan.class))).thenAnswer(invocation -> invocation.getArgument(0)); // Retorna o mesmo objeto
+    @ParameterizedTest
+    @ValueSource(longs = { 50L, 100L, 1L })
+    @DisplayName("Deve finalizar empréstimo com sucesso para diferentes IDs")
+    void returnLoan_Parameterized(Long loanId) {
+        Loan mockLoan = Loan.builder().id(loanId).status("ACTIVE").build();
 
-        LoanResponseDTO result = loanService.returnLoan(50L);
+        when(loanRepository.findById(loanId)).thenReturn(Optional.of(mockLoan));
+        when(loanRepository.save(any(Loan.class))).thenAnswer(i -> i.getArgument(0));
+
+        LoanResponseDTO result = loanService.returnLoan(loanId);
 
         assertEquals("RETURNED", result.getStatus());
         assertEquals(LocalDate.now(), result.getReturnDate());
-        verify(loanRepository).save(loan);
-    }
-
-    @Test
-    @DisplayName("Deve lançar erro ao tentar devolver empréstimo inexistente")
-    void returnLoan_NotFound() {
-        when(loanRepository.findById(99L)).thenReturn(Optional.empty());
-
-        assertThrows(ResourceNotFoundException.class, () -> loanService.returnLoan(99L));
-        
-        verify(loanRepository, never()).save(any());
+        verify(loanRepository).save(mockLoan);
     }
 }

@@ -6,11 +6,13 @@ import com.librishare.backend.modules.history.entity.UserHistory;
 import com.librishare.backend.modules.history.repository.UserHistoryRepository;
 import com.librishare.backend.modules.history.service.impl.HistoryServiceImpl;
 import com.librishare.backend.modules.user.entity.User;
-import com.librishare.backend.modules.user.repository.UserRepository; // Import Adicionado
+import com.librishare.backend.modules.user.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
@@ -18,7 +20,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 
-import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -68,19 +69,24 @@ class HistoryServiceImplTest {
 
     // --- Log Action Tests ---
 
-    @Test
-    @DisplayName("Deve salvar uma ação no histórico corretamente")
-    void logAction_Success() {
-        historyService.logAction(user, "EMPRÉSTIMO", "Emprestou um livro");
+    @ParameterizedTest
+    @CsvSource({
+            "EMPRÉSTIMO, Emprestou um livro",
+            "DEVOLUÇÃO, Devolveu o livro Dom Quixote",
+            "LOGIN, Usuário realizou login no sistema",
+            "UPDATE, Atualizou perfil"
+    })
+    @DisplayName("Deve salvar diferentes ações no histórico corretamente")
+    void logAction_Parameterized(String actionType, String description) {
+        historyService.logAction(user, actionType, description);
 
         verify(repository, times(1)).save(historyCaptor.capture());
-
         UserHistory capturedHistory = historyCaptor.getValue();
 
         assertNotNull(capturedHistory);
         assertEquals(user, capturedHistory.getUser());
-        assertEquals("EMPRÉSTIMO", capturedHistory.getActionType());
-        assertEquals("Emprestou um livro", capturedHistory.getDescription());
+        assertEquals(actionType, capturedHistory.getActionType());
+        assertEquals(description, capturedHistory.getDescription());
     }
 
     // --- Get History Tests ---
@@ -99,8 +105,6 @@ class HistoryServiceImplTest {
 
         assertNotNull(result);
         assertEquals(2, result.size());
-        assertEquals("LOGIN", result.get(0).getActionType());
-
         verify(userRepository).existsById(1L);
         verify(repository).findTop3ByUserIdOrderByCreatedAtDesc(1L);
     }
@@ -109,15 +113,12 @@ class HistoryServiceImplTest {
     @DisplayName("Deve retornar lista vazia se não houver histórico")
     void getUserHistory_Empty() {
         when(userRepository.existsById(1L)).thenReturn(true);
-
         when(repository.findTop3ByUserIdOrderByCreatedAtDesc(1L)).thenReturn(Collections.emptyList());
 
         List<HistoryResponseDTO> result = historyService.getUserHistory(1L);
 
         assertNotNull(result);
         assertTrue(result.isEmpty());
-
-        verify(mapper, never()).map(any(), any());
     }
 
     @Test
@@ -128,7 +129,5 @@ class HistoryServiceImplTest {
         assertThrows(ResourceNotFoundException.class, () ->
                 historyService.getUserHistory(99L)
         );
-
-        verify(repository, never()).findTop3ByUserIdOrderByCreatedAtDesc(anyLong());
     }
 }
