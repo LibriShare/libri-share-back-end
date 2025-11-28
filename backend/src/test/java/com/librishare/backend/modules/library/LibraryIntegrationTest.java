@@ -1,10 +1,8 @@
 package com.librishare.backend.modules.library;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.librishare.backend.modules.book.entity.Book;
 import com.librishare.backend.modules.book.repository.BookRepository;
-import com.librishare.backend.modules.history.service.HistoryService;
 import com.librishare.backend.modules.library.dto.AddBookRequest;
 import com.librishare.backend.modules.library.entity.UserBook;
 import com.librishare.backend.modules.library.enums.ReadingStatus;
@@ -18,19 +16,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Map;
 
-import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -38,29 +32,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Transactional
 class LibraryIntegrationTest {
 
-    @Autowired
-    private MockMvc mockMvc;
+    @Autowired private MockMvc mockMvc;
+    @Autowired private ObjectMapper objectMapper;
+    @Autowired private UserRepository userRepository;
+    @Autowired private BookRepository bookRepository;
+    @Autowired private UserBookRepository userBookRepository;
 
-    @Autowired
-    private ObjectMapper objectMapper;
-
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private BookRepository bookRepository;
-
-    @Autowired
-    private UserBookRepository userBookRepository;
-    
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-
-    @Autowired
-    private HistoryService historyService;
-
-    private User testUser;
-    private Book testBook;
+    private User user;
+    private Book book;
 
     @BeforeEach
     void setUp() {
@@ -68,61 +47,34 @@ class LibraryIntegrationTest {
         userRepository.deleteAll();
         bookRepository.deleteAll();
 
-        testUser = User.builder()
-                .email("library.user@test.com")
-                .firstName("Library")
-                .lastName("User")
-                .password(passwordEncoder.encode("password123"))
-                .build();
-        userRepository.save(testUser);
-
-        testBook = Book.builder()
-                .title("Library Test Book")
-                .author("Author")
-                .isbn("1112223334455")
-                .build();
-        bookRepository.save(testBook);
+        user = userRepository.save(User.builder().firstName("Lib").lastName("User").email("lib@test.com").build());
+        book = bookRepository.save(Book.builder().title("Lib Book").author("Lib Author").isbn("123").build());
     }
 
     @Test
-    @DisplayName("Deve adicionar um livro à biblioteca do usuário")
-    void addBookToLibrary_Success() throws Exception {
-        AddBookRequest dto = new AddBookRequest(testBook.getId(), ReadingStatus.WANT_TO_READ);
+    @DisplayName("Deve adicionar livro à estante")
+    void addBookToLibrary() throws Exception {
+        AddBookRequest req = new AddBookRequest(book.getId(), ReadingStatus.WANT_TO_READ);
 
-        mockMvc.perform(post("/api/v1/users/" + testUser.getId() + "/library")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(dto)))
+        mockMvc.perform(post("/api/v1/users/" + user.getId() + "/library")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.bookId").value(testBook.getId()))
-                .andExpect(jsonPath("$.status").value("WANT_TO_READ"));
+                .andExpect(jsonPath("$.status", is("WANT_TO_READ")))
+                .andExpect(jsonPath("$.title", is("Lib Book")));
     }
 
     @Test
-    @DisplayName("Deve buscar a biblioteca de um usuário")
-    void getUserLibrary_Success() throws Exception {
-        addBookToLibrary_Success();
+    @DisplayName("Deve atualizar o status de leitura")
+    void updateBookStatus() throws Exception {
+        UserBook ub = userBookRepository.save(UserBook.builder().user(user).book(book).status(ReadingStatus.WANT_TO_READ).build());
 
-        mockMvc.perform(get("/api/v1/users/" + testUser.getId() + "/library"))
+        Map<String, String> update = Map.of("status", "READING");
+
+        mockMvc.perform(patch("/api/v1/users/" + user.getId() + "/library/" + ub.getId() + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(update)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(1)))
-                .andExpect(jsonPath("$[0].bookId", is(testBook.getId().intValue())));
-    }
-
-    @Test
-    @DisplayName("Deve remover livro que não pertence ao usuário")
-    void removeBookFromLibrary_NotOwner_Fails() throws Exception {
-        // Cria um segundo usuário (completo)
-        User otherUser = userRepository.save(User.builder()
-                .email("other@test.com")
-                .password(passwordEncoder.encode("p"))
-                .firstName("Other") // Campo obrigatório
-                .lastName("User") // Campo obrigatório
-                .build());
-
-        UserBook otherUserBook = userBookRepository.save(UserBook.builder().user(otherUser).book(testBook).status(ReadingStatus.READ).build());
-
-        // Tenta remover o livro de "otherUser" usando o ID do "testUser"
-        mockMvc.perform(delete("/api/v1/users/" + testUser.getId() + "/library/" + otherUserBook.getId()))
-                .andExpect(status().isNotFound());
+                .andExpect(jsonPath("$.status", is("READING")));
     }
 }

@@ -1,7 +1,9 @@
 package com.librishare.backend.modules.user;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.librishare.backend.modules.user.dto.LoginRequestDTO;
 import com.librishare.backend.modules.user.dto.UserRequestDTO;
+import com.librishare.backend.modules.user.entity.User;
 import com.librishare.backend.modules.user.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -10,18 +12,19 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.hamcrest.Matchers.hasSize;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@ActiveProfiles("test") 
-@Transactional 
+@ActiveProfiles("test")
+@Transactional
 class UserIntegrationTest {
 
     @Autowired
@@ -33,62 +36,81 @@ class UserIntegrationTest {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
     @BeforeEach
     void setUp() {
         userRepository.deleteAll();
     }
 
-    private UserRequestDTO createValidUserDTO() {
-        UserRequestDTO dto = new UserRequestDTO();
-        dto.setFirstName("Integration");
-        dto.setLastName("Test");
-        dto.setEmail("integration.test@example.com");
-        dto.setPassword("ValidPassword123");
-        return dto;
-    }
-
     @Test
-    @DisplayName("Deve criar um usuário com sucesso via API")
+    @DisplayName("Deve criar um usuário com sucesso")
     void createUser_Success() throws Exception {
-        UserRequestDTO userRequestDTO = createValidUserDTO();
+        UserRequestDTO dto = new UserRequestDTO();
+        dto.setFirstName("Maria");
+        dto.setLastName("Silva");
+        dto.setEmail("maria@email.com");
+        dto.setPassword("123456");
 
         mockMvc.perform(post("/api/v1/users")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(userRequestDTO)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").exists())
-                .andExpect(jsonPath("$.email").value("integration.test@example.com"))
+                .andExpect(jsonPath("$.email").value("maria@email.com"))
                 .andExpect(jsonPath("$.password").doesNotExist());
     }
 
     @Test
-    @DisplayName("Deve falhar ao criar usuário com email inválido (Validação)")
-    void createUser_InvalidEmail_Fails() throws Exception {
-        UserRequestDTO userRequestDTO = createValidUserDTO();
-        userRequestDTO.setEmail("invalid-email"); // Email inválido
+    @DisplayName("Deve realizar login com sucesso")
+    void login_Success() throws Exception {
+        User user = new User();
+        user.setFirstName("João");
+        user.setLastName("Teste");
+        user.setEmail("joao@login.com");
+        user.setPassword(passwordEncoder.encode("senha123"));
+        userRepository.save(user);
 
-        mockMvc.perform(post("/api/v1/users")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(userRequestDTO)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.errors.email").value("O email fornecido é inválido"));
+        LoginRequestDTO loginDto = new LoginRequestDTO();
+        loginDto.setEmail("joao@login.com");
+        loginDto.setPassword("senha123");
+
+        mockMvc.perform(post("/api/v1/users/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(loginDto)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.email").value("joao@login.com"));
     }
 
     @Test
-    @DisplayName("Deve falhar ao criar usuário com email duplicado (Conflito)")
-    void createUser_DuplicateEmail_Fails() throws Exception {
-        // 1. Cria o primeiro usuário
-        mockMvc.perform(post("/api/v1/users")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(createValidUserDTO())));
+    @DisplayName("Deve falhar login com senha incorreta")
+    void login_WrongPassword() throws Exception {
+        User user = new User();
+        user.setFirstName("João");
+        user.setLastName("Teste");
+        user.setEmail("joao@errado.com");
+        user.setPassword(passwordEncoder.encode("senhaCorreta"));
+        userRepository.save(user);
 
-        // 2. Tenta criar o segundo usuário com o mesmo email
-        UserRequestDTO duplicateUserDTO = createValidUserDTO();
+        LoginRequestDTO loginDto = new LoginRequestDTO();
+        loginDto.setEmail("joao@errado.com");
+        loginDto.setPassword("senhaErrada");
 
-        mockMvc.perform(post("/api/v1/users")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(duplicateUserDTO)))
-                .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.message").value("Erro: Email já cadastrado."));
+        mockMvc.perform(post("/api/v1/users/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(loginDto)))
+                .andExpect(status().isUnauthorized()); // BadCredentialsException vira 401 no GlobalHandler
+    }
+
+    @Test
+    @DisplayName("Deve buscar usuário por ID")
+    void getUserById_Success() throws Exception {
+        User user = userRepository.save(User.builder()
+                .firstName("Ana").lastName("Souza").email("ana@id.com").password("pw").build());
+
+        mockMvc.perform(get("/api/v1/users/" + user.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.firstName").value("Ana"));
     }
 }

@@ -1,120 +1,127 @@
-# Librishare - API (Backend)
 
-[](https://www.java.com)
-[](https://spring.io/projects/spring-boot)
-[](https://maven.apache.org/)
-[](https://www.docker.com/)
+# 🧱 LibriShare - Back-end
 
-Este repositório contém o código-fonte da API REST do projeto Librishare, um sistema de gerenciamento e compartilhamento de livros.
+> Uma API REST robusta e escalável desenvolvida para gerenciar dados de usuários, acervo de livros, status de leitura e histórico de empréstimos, garantindo integridade e performance para a plataforma LibriShare.
 
-## Índice
+[![Java](https://img.shields.io/badge/Java-17-orange)](https://www.oracle.com/java/)
+[![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.5-green)](https://spring.io/projects/spring-boot)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14-blue)](https://www.postgresql.org/)
+[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED)](https://www.docker.com/)
+[![Swagger](https://img.shields.io/badge/Swagger-OpenAPI_3-85EA2D)](https://swagger.io/)
 
-  - [Pré-requisitos](#pré-requisitos)
-  - [Como Rodar (Docker)](#como-rodar-com-docker-compose)
-  - [Desenvolvimento Local](#desenvolvimento-local)
-      - [Rodando Testes](#rodando-testes)
-      - [Análise de Qualidade (Lint)](#análise-de-qualidade-e-lint)
-  - [Tecnologias Utilizadas](#tecnologias-utilizadas)
+---
 
-## Pré-requisitos
+## ✨ Funcionalidades
 
-Antes de começar, garanta que você tenha as seguintes ferramentas instaladas:
+Esta API fornece os endpoints necessários para o funcionamento completo do ecossistema LibriShare:
 
-  * Java (JDK) 17 ou superior
-  * Docker
-  * Docker Compose
+* **👤 Gestão de Usuários:** Cadastro, autenticação (suporte a OAuth2/Google) e perfis de usuário.
+* **📚 Catálogo Global:** Cadastro e busca de livros no sistema, com validação de ISBN e Google Books ID.
+* **🔖 Biblioteca Pessoal:** Gerenciamento de estantes (*Lendo, Lido, Para Ler*), avaliações (0-5 estrelas) e progresso de páginas.
+* **🤝 Sistema de Empréstimos:** Controle total de quem está com seus livros, datas de devolução e status (*Ativo/Devolvido*).
+* **🕰️ Histórico de Atividades:** Registro automático de ações (adicionou livro, emprestou, devolveu) para timeline do usuário.
 
-## Como Rodar com Docker Compose
+---
 
-Esta é a forma recomendada de executar o projeto, pois ela gerencia a API e o banco de dados PostgreSQL automaticamente.
+## 🛠️ Tecnologias
 
-1.  Clone este repositório:
+O projeto segue uma arquitetura em camadas (Controller, Service, Repository) utilizando as melhores práticas do mercado:
 
+-   **[Java 17](https://www.oracle.com/java/)**: Linguagem base (LTS).
+-   **[Spring Boot 3](https://spring.io/projects/spring-boot)**: Framework principal (Web, Data JPA, Security, Validation).
+-   **[PostgreSQL](https://www.postgresql.org/)**: Banco de dados relacional robusto.
+-   **[Flyway](https://flywaydb.org/)**: Versionamento e migração segura de banco de dados.
+-   **[SpringDoc / Swagger](https://springdoc.org/)**: Documentação viva e interativa da API.
+-   **[JUnit 5 & Mockito](https://junit.org/junit5/)**: Testes unitários e de integração confiáveis.
+-   **[Docker](https://www.docker.com/)**: Containerização completa da aplicação e banco de dados.
+
+---
+
+## 📖 Documentação da API
+
+A API é auto-documentada utilizando o padrão **OpenAPI 3**.
+Após iniciar a aplicação, você pode acessar a interface interativa do Swagger para testar os endpoints:
+
+👉 **[http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)**
+
+---
+
+## 🚀 Como Rodar Localmente
+
+A maneira mais simples de rodar o projeto é utilizando **Docker Compose**, que sobe tanto a API quanto o banco de dados PostgreSQL configurados automaticamente.
+
+### Pré-requisitos
+
+* Docker e Docker Compose instalados.
+* (Opcional) Java 17 e Maven para rodar fora do Docker.
+
+### Passo a Passo (Docker)
+
+1.  **Clone o repositório:**
     ```bash
-    git clone git@github.com:LibriShare/libri-share-back-end.git
-    cd libri-share-back-end
+    git clone https://github.com/LibriShare/libri-share-back-end.git
+    cd libri-share-back-end/backend
     ```
 
-2.  Navegue até a pasta `backend`, que contém o arquivo `docker-compose.yml`:
-
+2.  **Suba os containers:**
+    Isso irá compilar o projeto, criar a imagem e iniciar o banco de dados.
     ```bash
-    cd backend
+    docker compose up --build
     ```
 
-3.  **(Primeira vez ou se houver mudanças no código)**
-    Execute o `build` para construir a imagem da aplicação:
+3.  **Pronto!** A API estará rodando em `http://localhost:8080`.
 
+### Passo a Passo (Desenvolvimento/Testes)
+
+Se você quiser rodar os testes ou a análise estática de código localmente (sem subir o container da aplicação):
+
+1.  **Rodar Testes (Unitários e Integração):**
+    O projeto utiliza um banco H2 em memória para testes, então não precisa do Postgres rodando para isso.
     ```bash
-    docker compose build
+    ./mvnw test
     ```
 
-4.  Inicie os serviços (API e Banco de Dados):
-
+2.  **Verificar Qualidade do Código (Lint):**
+    O projeto utiliza **Checkstyle**, **PMD** e **SpotBugs** para garantir o padrão "Nota 10".
     ```bash
-    docker compose up
+    ./mvnw clean verify
     ```
+    *Se o build passar, seu código está limpo e seguro!*
 
-A API estará disponível em [http://localhost:8080](http://localhost:8080).
+---
 
-Para parar todos os serviços, pressione `Ctrl + C` no terminal ou execute `docker compose down` em outro terminal.
+## 📂 Estrutura do Projeto
 
-## Desenvolvimento Local
-
-Para rodar os comandos de teste ou verificação, certifique-se de estar na pasta `backend/`, onde o `mvnw` (Maven Wrapper) está localizado.
-
-### Rodando Testes
-
-Para executar a suíte de testes unitários e de integração, utilize o seguinte comando:
+O código está organizado por módulos de domínio para facilitar a manutenção:
 
 ```bash
-# Estando na pasta 'backend/'
-./mvnw test
-```
+src/main/java/com/librishare/backend/
+├── config/             # Configurações globais (Security, Mapper, Swagger)
+├── exception/          # Tratamento global de erros (ControllerAdvice)
+└── modules/            # Módulos de domínio
+    ├── book/           # Entidades e lógica do Catálogo Global
+    ├── history/        # Logs de atividade do usuário
+    ├── library/        # Gestão da estante pessoal (vínculo User-Book)
+    ├── loan/           # Regras de negócio de Empréstimos
+    └── user/           # Gestão de contas e autenticação
+````
 
-### Análise de Qualidade e Lint
+-----
 
-Para garantir a qualidade e a padronização do código, o projeto está configurado com três ferramentas de análise estática (Lint):
+## 🧪 Qualidade de Código
 
-  * **Checkstyle:** Garante o padrão de formatação e estilo (baseado no Google Style).
-  * **PMD:** Encontra "maus cheiros" (code smells), como código duplicado, complexidade desnecessária ou variáveis não utilizadas.
-  * **SpotBugs:** Detecta bugs em potencial, como possíveis NullPointerExceptions ou recursos não fechados.
+Utilizamos ferramentas de análise estática configuradas no pipeline de build:
 
-#### Verificando o "Nota 10"
+| Ferramenta | Função |
+| :--- | :--- |
+| **Checkstyle** | Garante a formatação (Google Style Guide). |
+| **PMD** | Encontra "code smells" e complexidade desnecessária. |
+| **SpotBugs** | Detecta bugs em potencial e falhas de segurança. |
 
-Para rodar todas as verificações (incluindo os testes), execute:
-
-```bash
-# Estando na pasta 'backend/'
-./mvnw clean verify
-```
-
-Se o comando terminar com **`[INFO] BUILD SUCCESS`**, seu código passou em todas as verificações\!
-
-Se ele falhar com **`[INFO] BUILD FAILURE`**, significa que um dos linters encontrou um problema que precisa ser corrigido.
-
-#### Gerando Relatórios de Erros
-
-Para ver um relatório detalhado em HTML de todas as violações de Lint, execute:
+Para gerar um relatório HTML detalhado das análises:
 
 ```bash
-# Estando na pasta 'backend/'
 ./mvnw clean site
 ```
 
-Após a execução, abra a pasta `backend/target/site/` no seu explorador de arquivos e abra os seguintes arquivos no seu navegador para ver os problemas:
-
-  * `checkstyle.html` (Erros de estilo)
-  * `pmd.html` (Erros de "code smells")
-  * `spotbugs.html` (Bugs em potencial)
-
-## Tecnologias Utilizadas
-
-  * **Java 17**
-  * **Spring Boot 3.5.5** (Web, Data JPA, Validation)
-  * **PostgreSQL** (Banco de Dados)
-  * **Maven** (Gerenciador de dependências)
-  * **Docker** (Contêineres)
-  * **Flyway** (Migrações de banco de dados)
-  * **Lombok** (Redução de boilerplate)
-  * **ModelMapper** (Mapeamento de DTOs)
-  * **SpringDoc (Swagger)** (Documentação da API)
+*(Abra `target/site/index.html` no navegador)*
